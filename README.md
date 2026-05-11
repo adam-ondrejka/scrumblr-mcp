@@ -1,6 +1,6 @@
 # scrumblr-mcp
 
-Read-only MCP server for a single [scrumblr](https://github.com/lspevak/scrumblr) board behind the company VPN.
+Read-only MCP server for a single [scrumblr](https://github.com/lspevak/scrumblr) board.
 
 ## What it does
 
@@ -16,7 +16,7 @@ Snapshots are cached for `SCRUMBLR_CACHE_MS` (default 30s) so multiple tool call
 ## Requirements
 
 - Node 20+
-- VPN access to the scrumblr host
+- Network access to the scrumblr host
 - The board id (the URL segment after the origin)
 
 ## Install
@@ -37,7 +37,7 @@ npm run snapshot
 
 You should see a JSON dump with `cards`, `columns`, etc. If it hangs or times out:
 
-- check VPN
+- check network connectivity to the scrumblr host
 - confirm `SCRUMBLR_URL` is the **origin only**, not the full board URL
 - confirm `SCRUMBLR_BOARD` matches the path segment
 - if the server runs under a sub-path, set `SCRUMBLR_BASEURL` (matches `conf.baseurl` on the server)
@@ -46,8 +46,6 @@ You should see a JSON dump with `cards`, `columns`, etc. If it hangs or times ou
 ## Wire into your editor
 
 The package exposes a `scrumblr-mcp` bin, so it can run via `npx` straight from this repo — no clone, no `npm install`, just an entry in your MCP config. Fill in `SCRUMBLR_URL` / `SCRUMBLR_BOARD` for your team's board.
-
-> Requires VPN connectivity to the scrumblr host whenever the tools are called.
 
 ### VS Code (Copilot Chat / MCP)
 
