@@ -1,6 +1,6 @@
 # scrumblr-mcp
 
-Read-only [Model Context Protocol](https://modelcontextprotocol.io) server for a single [scrumblr](https://github.com/lspevak/scrumblr) board. Lets the AI in your editor search, summarize, and reason about the cards on your team's board.
+Read-only [MCP](https://modelcontextprotocol.io) server for a [scrumblr](https://github.com/lspevak/scrumblr) board. Gives your editor's AI a way to query what's on the board: cards, rows, story clusters.
 
 ## Tools
 
@@ -15,7 +15,7 @@ Snapshots are cached for `SCRUMBLR_CACHE_MS` (default 30s) so multiple tool call
 
 ## Install
 
-The package exposes a `scrumblr-mcp` bin, so you can run it via `npx` straight from this repo — no clone, no `npm install`, just an entry in your MCP config.
+The package ships a `scrumblr-mcp` bin and runs via `npx` straight from this repo, so you don't need to clone or `npm install`. Paste the snippet for your editor below into its MCP config.
 
 ### VS Code
 
@@ -61,10 +61,10 @@ Add to `~/.config/opencode/opencode.json` (or a project-level `opencode.json`):
 
 | Env var | Required | Default | Notes |
 | --- | --- | --- | --- |
-| `SCRUMBLR_URL` | yes | — | Origin only, e.g. `https://scrumblr.example.com`. No trailing path. |
-| `SCRUMBLR_BOARD` | yes | — | Board id (the URL segment after the origin). |
-| `SCRUMBLR_BASEURL` | no | `/` | Sub-path the server runs under; matches `conf.baseurl` on the server. |
-| `SCRUMBLR_COOKIE` | no | — | Cookie header for auth-gated servers; capture from a logged-in browser session. |
+| `SCRUMBLR_URL` | yes | | Origin only, e.g. `https://scrumblr.example.com`. No trailing path. |
+| `SCRUMBLR_BOARD` | yes | | Board id (the URL segment after the origin). |
+| `SCRUMBLR_BASEURL` | no | `/` | Sub-path the server runs under, matches `conf.baseurl` on the server. |
+| `SCRUMBLR_COOKIE` | no | | Cookie header for auth-gated servers. Capture from a logged-in browser session. |
 | `SCRUMBLR_CACHE_MS` | no | `30000` | Snapshot cache TTL in milliseconds. |
 | `SCRUMBLR_JIRA_PREFIX` | no | `[A-Z]+` | Project prefix used to detect story cards. Set to e.g. `PROJ` to narrow detection. |
 
@@ -124,9 +124,9 @@ Cards have absolute `x`/`y` pixel positions, not column references. `get_story_c
 ## Limits
 
 - Read-only; no card create/edit.
-- No live subscription — every `get_board` call is a fresh socket round-trip (or cache hit).
+- No live subscription. Every `get_board` call is a fresh socket round-trip, or a cache hit.
 - Assumes socket.io 2.x server; will fail handshake against a 3.x or 4.x scrumblr fork.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
