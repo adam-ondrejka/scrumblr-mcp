@@ -1,0 +1,23 @@
+{
+  "name": "scrumblr-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that scrapes a single scrumblr board over socket.io",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "scrumblr-mcp": "src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "start": "node src/index.js",
+    "snapshot": "node src/snapshot-cli.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "socket.io-client": "^2.5.0"
+  }
+}
