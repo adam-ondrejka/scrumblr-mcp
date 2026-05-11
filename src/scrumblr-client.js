@@ -16,6 +16,8 @@ import io from "socket.io-client";
 
 const QUIET_MS = 750;
 const HARD_TIMEOUT_MS = 15000;
+const WRITE_FLUSH_MS = 250;
+const WRITE_HARD_TIMEOUT_MS = 10000;
 
 /**
  * @param {object} opts
@@ -100,6 +102,65 @@ function applyMessage(socket, snap, msg) {
 }
 
 const arr = (v) => (Array.isArray(v) ? v : []);
+
+/**
+ * Send a single write action (e.g. createCard, deleteCard) to the board.
+ *
+ * The lspevak server broadcasts writes to roommates only, so the writer
+ * never sees its own action echoed back. Instead we wait for `roomAccept`,
+ * send the action, give the socket a short flush window, then disconnect.
+ *
+ * @param {object} cfg
+ * @param {string} cfg.url
+ * @param {string} cfg.board
+ * @param {string} [cfg.baseurl='/']
+ * @param {string} [cfg.cookie]
+ * @param {string} action  Server-side action name, e.g. 'createCard'.
+ * @param {object} data    Action payload (shape varies per action).
+ * @returns {Promise<void>}
+ */
+export async function sendCardWrite({ url, board, baseurl = "/", cookie }, action, data) {
+  const socketPath = baseurl === "/" ? "/socket.io" : `${baseurl.replace(/\/$/, "")}/socket.io`;
+  const roomId = board.startsWith("/") ? board : "/" + board;
+
+  const socket = io(url, {
+    path: socketPath,
+    transports: ["websocket", "polling"],
+    reconnection: false,
+    forceNew: true,
+    extraHeaders: cookie ? { Cookie: cookie } : undefined,
+  });
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(hardTimer);
+      try { socket.disconnect(); } catch {}
+      err ? reject(err) : resolve();
+    };
+
+    const hardTimer = setTimeout(
+      () => finish(new Error(`scrumblr write timed out after ${WRITE_HARD_TIMEOUT_MS}ms`)),
+      WRITE_HARD_TIMEOUT_MS,
+    );
+
+    socket.on("connect_error", (e) => finish(new Error(`connect_error: ${e?.message || e}`)));
+    socket.on("error", (e) => finish(new Error(`socket error: ${e?.message || e}`)));
+    socket.on("connect", () => socket.send({ action: "joinRoom", data: roomId }));
+    socket.on("message", (msg) => {
+      if (msg?.action !== "roomAccept") return;
+      socket.send({ action, data });
+      setTimeout(() => finish(null), WRITE_FLUSH_MS);
+    });
+  });
+}
+
+/** Generate a card id unlikely to collide with existing seeded ids. */
+export function newCardId() {
+  return `mcp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 /**
  * @typedef {object} Card

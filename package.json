@@ -1,6 +1,6 @@
 {
   "name": "scrumblr-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Read-only MCP server that exposes a scrumblr board (socket.io v2) as tools.",
   "private": true,
   "type": "module",
@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "snapshot": "node src/snapshot-cli.js"
+    "snapshot": "node src/snapshot-cli.js",
+    "test": "node --test 'test/*.test.mjs'"
   },
   "engines": {
     "node": ">=20"
@@ -42,5 +43,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
     "socket.io-client": "^2.5.0"
+  },
+  "devDependencies": {
+    "socket.io": "^2.5.1"
   }
 }

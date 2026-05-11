@@ -1,8 +1,10 @@
 # scrumblr-mcp
 
-Read-only [MCP](https://modelcontextprotocol.io) server for a [scrumblr](https://github.com/lspevak/scrumblr) board. Gives your editor's AI a way to query what's on the board: cards, rows, story clusters.
+[MCP](https://modelcontextprotocol.io) server for a [scrumblr](https://github.com/lspevak/scrumblr) board. Gives your editor's AI a way to query, search, and edit the cards on your team's board.
 
 ## Tools
+
+### Read
 
 | Tool | What it does | Input |
 | --- | --- | --- |
@@ -11,7 +13,16 @@ Read-only [MCP](https://modelcontextprotocol.io) server for a [scrumblr](https:/
 | `summarize_board` | Compact text view grouped by horizontal row band, story cards flagged. | `refresh?: boolean` |
 | `get_story_cluster` | Given a Jira-style id, returns the story card plus the open task cards spatially tied to it (`x < story.x`, same row band). | `jira: string`, `refresh?: boolean` |
 
-Snapshots are cached for `SCRUMBLR_CACHE_MS` (default 30s) so multiple tool calls in one prompt don't hammer the server.
+### Write
+
+| Tool | What it does | Input |
+| --- | --- | --- |
+| `create_card` | Create a new card. Returns the generated id. | `text: string`, `x?: number`, `y?: number`, `colour?: enum`, `rot?: number` |
+| `delete_card` | Delete a card by id. | `id: string` |
+
+The scrumblr server broadcasts writes to other clients only, not back to the writer, so a write tool can't see its own change. Call `get_board` (with `refresh: true`) right after a write to confirm the new state. Writes invalidate the local cache automatically.
+
+Snapshots are cached for `SCRUMBLR_CACHE_MS` (default 30s) so multiple read tool calls in one prompt don't hammer the server.
 
 ## Install
 
@@ -123,7 +134,7 @@ Cards have absolute `x`/`y` pixel positions, not column references. `get_story_c
 
 ## Limits
 
-- Read-only; no card create/edit.
+- Writes are fire-and-forget. The server doesn't echo them back to the writer, so confirmation requires a follow-up `get_board`. There's no undo on scrumblr itself.
 - No live subscription. Every `get_board` call is a fresh socket round-trip, or a cache hit.
 - Assumes socket.io 2.x server; will fail handshake against a 3.x or 4.x scrumblr fork.
 

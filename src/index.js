@@ -13,7 +13,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { fetchBoardSnapshot } from "./scrumblr-client.js";
+import { fetchBoardSnapshot, newCardId, sendCardWrite } from "./scrumblr-client.js";
 import { cardText, clusterFor, findStory, isStoryCard, num, rowLabelFor } from "./board-utils.js";
 
 const cfg = {
@@ -66,6 +66,36 @@ const tools = [
       properties: { jira: { type: "string" }, refresh: { type: "boolean" } },
     },
   },
+  {
+    name: "create_card",
+    description:
+      "Create a new card on the board. The server does not echo writes back to the writer, so call get_board (with refresh=true) afterwards to confirm. Returns the generated card id.",
+    inputSchema: {
+      type: "object",
+      required: ["text"],
+      properties: {
+        text: { type: "string", description: "Card text. Markdown supported by scrumblr." },
+        x: { type: "number", description: "X pixel position. Default 50." },
+        y: { type: "number", description: "Y pixel position. Default 50." },
+        colour: {
+          type: "string",
+          enum: ["white", "yellow", "blue", "green", "red", "orange", "purple"],
+          description: "Card colour. Default 'yellow'.",
+        },
+        rot: { type: "number", description: "Rotation in degrees. Default 0." },
+      },
+    },
+  },
+  {
+    name: "delete_card",
+    description:
+      "Delete a card by id. The server does not echo writes back to the writer, so call get_board (with refresh=true) afterwards to confirm.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: { id: { type: "string" } },
+    },
+  },
 ];
 
 const server = new Server(
@@ -78,18 +108,43 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
   const { name, arguments: args = {} } = req.params;
   try {
-    const snap = await getSnapshot({ force: !!args.refresh });
     switch (name) {
-      case "get_board":          return ok(JSON.stringify(snap, null, 2));
-      case "search_cards":       return ok(JSON.stringify(searchCards(snap, String(args.query || "")), null, 2));
-      case "summarize_board":    return ok(summarize(snap));
-      case "get_story_cluster":  return ok(JSON.stringify(storyCluster(snap, String(args.jira || "")), null, 2));
+      case "create_card":        return ok(JSON.stringify(await createCard(args), null, 2));
+      case "delete_card":        return ok(JSON.stringify(await deleteCard(args), null, 2));
+      case "get_board":          return ok(JSON.stringify(await getSnapshot({ force: !!args.refresh }), null, 2));
+      case "search_cards":       return ok(JSON.stringify(searchCards(await getSnapshot({ force: !!args.refresh }), String(args.query || "")), null, 2));
+      case "summarize_board":    return ok(summarize(await getSnapshot({ force: !!args.refresh })));
+      case "get_story_cluster":  return ok(JSON.stringify(storyCluster(await getSnapshot({ force: !!args.refresh }), String(args.jira || "")), null, 2));
       default:                   return err(`unknown tool: ${name}`);
     }
   } catch (e) {
-    return err(`scrumblr fetch failed: ${e?.message || e}`);
+    return err(`scrumblr operation failed: ${e?.message || e}`);
   }
 });
+
+async function createCard(args) {
+  const id = newCardId();
+  const payload = {
+    id,
+    text: String(args.text ?? ""),
+    x: Number.isFinite(args.x) ? args.x : 50,
+    y: Number.isFinite(args.y) ? args.y : 50,
+    rot: Number.isFinite(args.rot) ? args.rot : 0,
+    colour: args.colour || "yellow",
+    type: "",
+  };
+  await sendCardWrite(cfg, "createCard", payload);
+  cached = null;
+  return { ok: true, id, sent: payload };
+}
+
+async function deleteCard(args) {
+  const id = String(args.id || "");
+  if (!id) throw new Error("delete_card requires an id");
+  await sendCardWrite(cfg, "deleteCard", { id });
+  cached = null;
+  return { ok: true, id };
+}
 
 const ok  = (text) => ({ content: [{ type: "text", text }] });
 const err = (text) => ({ content: [{ type: "text", text }], isError: true });
