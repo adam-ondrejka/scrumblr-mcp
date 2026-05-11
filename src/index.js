@@ -2,7 +2,10 @@
 // MCP server exposing a single scrumblr board as read-only tools.
 //
 // Required env: SCRUMBLR_URL, SCRUMBLR_BOARD
-// Optional env: SCRUMBLR_BASEURL (default '/'), SCRUMBLR_COOKIE, SCRUMBLR_CACHE_MS (default 30000)
+// Optional env: SCRUMBLR_BASEURL (default '/')
+//               SCRUMBLR_COOKIE
+//               SCRUMBLR_CACHE_MS (default 30000)
+//               SCRUMBLR_JIRA_PREFIX (default '[A-Z]+'; controls story-card detection)
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -57,7 +60,7 @@ const tools = [
   {
     name: "get_story_cluster",
     description:
-      "Given a Jira id (e.g. CPR-1158), return the story card and the open task cards spatially tied to it (x < story.x, same row band). Cards to the right of a story are done or unrelated and excluded.",
+      "Given a Jira id (e.g. PROJ-123), return the story card and the open task cards spatially tied to it (x < story.x, same row band). Cards to the right of a story are done or unrelated and excluded.",
     inputSchema: {
       type: "object", required: ["jira"],
       properties: { jira: { type: "string" }, refresh: { type: "boolean" } },

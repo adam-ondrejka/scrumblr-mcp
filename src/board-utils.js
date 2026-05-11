@@ -1,21 +1,27 @@
-// Spatial helpers for the scrumblr board.
+// Spatial helpers for a scrumblr board.
 //
-// Conventions (CPR team's NoLimits board):
-//   - Story cards are white and contain a Jira id like [CPR-1158] plus an estimate (N).
-//   - Cards LEFT of a story (x < story.x) within ±ROW_PROXIMITY_PX of its y are
-//     the open task breakdown. Cards to the RIGHT are done OR unrelated; ignore.
-//   - Row separators define horizontal bands; a card's row label is the nearest
-//     separator at or above its y.
+// Convention this module assumes:
+//   - Story cards are white and contain a Jira-style id like [PROJ-123],
+//     optionally followed by an estimate.
+//   - Cards LEFT of a story (x < story.x) within ±ROW_PROXIMITY_PX of its y
+//     are the open task breakdown. Cards to the right are done or unrelated.
+//   - Row separators define horizontal bands; a card's row label is the
+//     nearest separator at or above its y.
+//
+// The Jira project prefix matched in story cards is configurable via the
+// SCRUMBLR_JIRA_PREFIX env var (default: any uppercase prefix).
 
 export const ROW_PROXIMITY_PX = 110;
-const JIRA_RE = /\[(CPR-\d+)\]/i;
+
+const JIRA_PREFIX = process.env.SCRUMBLR_JIRA_PREFIX || "[A-Z]+";
+const JIRA_RE = new RegExp(`\\[(${JIRA_PREFIX}-\\d+)\\]`, "i");
 
 export const num = (v) => {
   const n = parseFloat(String(v).replace(/[^\d.\-]/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
 
-export const cardText = (c) => (c?.text || "");
+export const cardText = (c) => c?.text || "";
 
 export const isStoryCard = (c) =>
   (c?.colour || "").toLowerCase() === "white" && JIRA_RE.test(cardText(c));
